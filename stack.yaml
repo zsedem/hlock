@@ -3,4 +3,5 @@ packages:
 - '.'
 flags: {}
 extra-package-dbs: []
-extra-deps: []
+extra-deps:
+- Unixutils-shadow-1.0.0

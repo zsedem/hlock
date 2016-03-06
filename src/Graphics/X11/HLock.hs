@@ -1,8 +1,11 @@
 module Graphics.X11.HLock(hlock) where
 import ClassyPrelude
 import Data.Bits((.|.))
+import Control.Monad.Trans.State
+import Control.Monad.Loops(whileM_)
 import Control.Concurrent (threadDelay, forkIO)
 import System.Exit(exitSuccess, exitFailure)
+import System.Posix.User.Password
 import qualified Graphics.X11.Xlib as X
 import qualified Graphics.X11.Xrandr as X
 import qualified Graphics.X11.Xlib.Extras as X
@@ -15,7 +18,7 @@ hlock justTest = liftIO $ do
         threadDelay (25 * 1000000)
         putStrLn "Exited after 15 sec because you set to just Testing"
         exitFailure
-    readPassword
+    waitForAuthenticate locks dpy
     forM_ locks $
         unlockScreen dpy
     X.closeDisplay dpy
@@ -88,6 +91,42 @@ forAllScreen dpy = forM [0..screenCount' - 1]
   where screenCount' = fromIntegral $ X.screenCount dpy
 
 -- TODO better name here
-readPassword :: IO ()
-readPassword = error "The red shirts are coming"
+waitForAuthenticate :: [LockT] -> X.Display -> IO ()
+waitForAuthenticate locks dpy = runLoop $ do
+    xEventPointer <- getEvent
+    event <- liftIO $ X.getEvent xEventPointer
+    liftIO $ print event
+    case event of
+        X.KeyEvent {} -> do
+            (mayKsym, str) <- liftIO $ X.lookupString $ X.asKeyEvent xEventPointer
+            let ksym = fromMaybe X.xK_F1 mayKsym
+            if ksym == X.xK_KP_Enter || ksym == X.xK_Return
+                then do
+                    text <- getCharacters
+                    resetCharacters
+                    liftIO $ checkPassword text
+                else do
+                    unless ( X.ev_event_type event == X.keyRelease
+                          || X.isFunctionKey ksym
+                          || X.isKeypadKey ksym
+                          || X.isMiscFunctionKey ksym
+                          || X.isPFKey ksym
+                          || X.isPrivateKeypadKey ksym) $
+                        append str
+                    return False
+        _otherwise -> liftIO $ do
+            forM_ locks $ \lock ->
+                X.raiseWindow dpy $ window lock
+            return False
+  where
+    runLoop loopBody = X.allocaXEvent $ \xevent -> evalStateT (whileM_ (not <$> loopBody) (return ())) (xevent, "")
+    getEvent :: LoopBodyT X.XEventPtr
+    getEvent = fst <$> get >>= \xe -> liftIO $ X.nextEvent dpy xe >> return xe
+    getCharacters :: LoopBodyT String
+    getCharacters = reverse.snd <$> get
+    append :: String -> LoopBodyT ()
+    append str = modify $ second (reverse str++)
+    resetCharacters = modify $ second (const "")
+
+type LoopBodyT a = StateT (X.XEventPtr, String) IO a
 

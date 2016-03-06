@@ -18,10 +18,17 @@ library
   ghc-options:         -Wall -Werror
   hs-source-dirs:      src
   exposed-modules:     Graphics.X11.HLock
+                     , Graphics.X11.HLock.Utils
+                     , System.Posix.User.Password
   build-depends:       base
                      , classy-prelude
                      , time
+                     , unix
                      , X11
+                     , Unixutils-shadow
+                     , Unixutils
+                     , monad-loops
+                     , transformers
   default-language:    Haskell2010
 
 executable hlock
@@ -31,6 +38,20 @@ executable hlock
   build-depends:       base
                      , hlock
   default-language:    Haskell2010
+
+test-suite unit-test
+  type:                exitcode-stdio-1.0
+  hs-source-dirs:      test
+  other-modules:       AllSpec
+  ghc-options:         -Wall -Werror
+  default-extensions:  NoImplicitPrelude
+                     , GeneralizedNewtypeDeriving
+  main-is:             Main.hs
+  build-depends:       base
+                     , classy-prelude
+                     , hspec
+                     , hlock
+ default-language:    Haskell2010
 
 source-repository head
   type:     git

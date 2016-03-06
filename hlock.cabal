@@ -15,6 +15,7 @@ cabal-version:       >=1.10
 library
   default-extensions: NoImplicitPrelude
                     , OverloadedStrings
+  ghc-options:         -Wall -Werror
   hs-source-dirs:      src
   exposed-modules:     Graphics.X11.HLock
   build-depends:       base
@@ -26,7 +27,7 @@ library
 executable hlock
   hs-source-dirs:      .
   main-is:             Main.hs
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N
+  ghc-options:         -Wall -Werror -threaded -rtsopts -with-rtsopts=-N
   build-depends:       base
                      , hlock
   default-language:    Haskell2010

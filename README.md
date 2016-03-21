@@ -1,4 +1,5 @@
-# hlock
+# hlock [![Build Status](https://travis-ci.org/zsedem/home.png?branch=master)](https://travis-ci.org/zsedem/home)
+
 Simple X locker (reimplementation of slock from the suckless.org)
 
 ## TODO

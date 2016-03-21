@@ -3,21 +3,17 @@ import ClassyPrelude
 import Data.Bits((.|.))
 import Control.Monad.Trans.State
 import Control.Monad.Loops(whileM_)
-import Control.Concurrent (threadDelay, forkIO)
+import Control.Concurrent(threadDelay)
 import System.Exit(exitSuccess, exitFailure)
 import System.Posix.User.Password
 import qualified Graphics.X11.Xlib as X
 import qualified Graphics.X11.Xrandr as X
 import qualified Graphics.X11.Xlib.Extras as X
 
-hlock :: MonadIO io => Bool -> io ()
-hlock justTest = liftIO $ do
+hlock :: MonadIO io => io ()
+hlock = liftIO $ do
     dpy <- X.openDisplay ""
     locks <- forAllScreen dpy $ lockScreen dpy
-    when justTest $ void $ forkIO $ do
-        threadDelay (25 * 1000000)
-        putStrLn "Exited after 15 sec because you set to just Testing"
-        exitFailure
     waitForAuthenticate locks dpy
     forM_ locks $
         unlockScreen dpy
@@ -95,7 +91,6 @@ waitForAuthenticate :: [LockT] -> X.Display -> IO ()
 waitForAuthenticate locks dpy = runLoop $ do
     xEventPointer <- getEvent
     event <- liftIO $ X.getEvent xEventPointer
-    liftIO $ print event
     case event of
         X.KeyEvent {} -> do
             (mayKsym, str) <- liftIO $ X.lookupString $ X.asKeyEvent xEventPointer

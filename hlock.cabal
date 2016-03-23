@@ -1,5 +1,5 @@
 name:                hlock
-version:             0.1.0.1
+version:             0.1.0.2
 synopsis:            Minimalistic X screen locker
 description:         This is simple X screen locker inspired by the slock from
                      suckless.org

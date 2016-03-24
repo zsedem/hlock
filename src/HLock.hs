@@ -2,7 +2,7 @@ module HLock(hlock, LockerT(..), AuthorizedT(..)) where
 import ClassyPrelude
 import Control.Monad.Loops(whileM_)
 
-hlock :: Monad m => LockerT m resource lock -> m ()
+hlock :: (Functor m, Monad m) => LockerT m resource lock -> m ()
 hlock (Locker
         grabResource'
         lockResource'

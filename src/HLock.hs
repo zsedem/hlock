@@ -1,5 +1,4 @@
 module HLock(hlock, LockerT(..), AuthorizedT(..)) where
-import ClassyPrelude
 import Control.Monad.Loops(whileM_)
 
 hlock :: (Functor m, Monad m) => LockerT m resource lock -> m ()

@@ -1,5 +1,4 @@
 module Main(main) where
-import ClassyPrelude
 import AllSpec(spec)
 import Test.Hspec.Runner
 import Test.Hspec.Formatters

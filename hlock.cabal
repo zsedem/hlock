@@ -15,8 +15,7 @@ cabal-version:       >=1.10
 tested-with:         GHC >= 7.8 && < 7.11
 
 library
-  default-extensions: NoImplicitPrelude
-                    , OverloadedStrings
+  default-extensions: OverloadedStrings
                     , GeneralizedNewtypeDeriving
   ghc-options:         -Wall
   hs-source-dirs:      src
@@ -24,14 +23,13 @@ library
                      , HLock
                      , System.Posix.User.Password
   build-depends:       base >=3 && <5
-                     , classy-prelude
-                     , time
-                     , unix
                      , X11
-                     , Unixutils-shadow
+                     , basic-prelude
                      , Unixutils
+                     , Unixutils-shadow
+                     , unix
+                     , mtl
                      , monad-loops
-                     , transformers
   default-language:    Haskell2010
 
 executable hlock
@@ -48,11 +46,9 @@ test-suite unit-test
   other-modules:       AllSpec
                      , HLockSpec
   ghc-options:         -Wall -Werror
-  default-extensions:  NoImplicitPrelude
-                     , GeneralizedNewtypeDeriving
+  default-extensions:  GeneralizedNewtypeDeriving
   main-is:             Test.hs
   build-depends:       base
-                     , classy-prelude
                      , hspec
                      , QuickCheck
                      , hlock

@@ -1,7 +1,6 @@
 module Graphics.X11.HLock(xLocker, hlock) where
-import ClassyPrelude
 import Data.Bits((.|.))
-import Control.Monad.Trans.State
+import Control.Monad.State
 import Control.Concurrent(threadDelay)
 import System.Exit(exitFailure)
 import System.Posix.User.Password

@@ -1,5 +1,4 @@
 module HLockSpec(spec) where
-import ClassyPrelude
 import Control.Monad.State
 import qualified HLock
 import Test.Hspec

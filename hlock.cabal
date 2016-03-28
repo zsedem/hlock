@@ -17,6 +17,7 @@ tested-with:         GHC >= 7.8 && < 7.11
 library
   default-extensions: NoImplicitPrelude
                     , OverloadedStrings
+                    , GeneralizedNewtypeDeriving
   ghc-options:         -Wall
   hs-source-dirs:      src
   exposed-modules:     Graphics.X11.HLock

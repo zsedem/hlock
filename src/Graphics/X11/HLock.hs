@@ -1,26 +1,31 @@
-module Graphics.X11.HLock(hlock) where
+module Graphics.X11.HLock(xLocker, hlock) where
 import ClassyPrelude
 import Data.Bits((.|.))
 import Control.Monad.Trans.State
-import Control.Monad.Loops(whileM_)
 import Control.Concurrent(threadDelay)
-import System.Exit(exitSuccess, exitFailure)
+import System.Exit(exitFailure)
 import System.Posix.User.Password
+import HLock hiding (hlock)
+import qualified HLock(hlock)
 import qualified Graphics.X11.Xlib as X
 import qualified Graphics.X11.Xrandr as X
 import qualified Graphics.X11.Xlib.Extras as X
 
+xLocker :: LockerT LoopBodyT X.Display [LockT]
+xLocker = Locker
+    { grabResource = liftIO $ X.openDisplay ""
+    , lockResource = \display ->
+        liftIO $ forAllScreen display $ lockScreen display
+    , unlockResource = \dpy _ -> liftIO $ X.closeDisplay dpy
+    , authenticationTry = keyboardEventHandler
+    }
+
 hlock :: MonadIO io => io ()
-hlock = liftIO $ do
-    dpy <- X.openDisplay ""
-    locks <- forAllScreen dpy $ lockScreen dpy
-    waitForAuthenticate locks dpy
-    forM_ locks $
-        unlockScreen dpy
-    X.closeDisplay dpy
-    exitSuccess
-  where
-    unlockScreen _ _ = return ()
+hlock = runLoopBody $ HLock.hlock xLocker
+
+runLoopBody :: MonadIO io => LoopBodyT a -> io a
+runLoopBody loopBody = liftIO $ X.allocaXEvent $ \xevent ->
+    evalStateT (unLoopBody loopBody) (xevent, "")
 
 lockScreen :: X.Display -> X.ScreenNumber -> IO LockT
 lockScreen dpy scr = do
@@ -86,9 +91,12 @@ forAllScreen :: X.Display -> (X.ScreenNumber -> IO b) -> IO [b]
 forAllScreen dpy = forM [0..screenCount' - 1]
   where screenCount' = fromIntegral $ X.screenCount dpy
 
--- TODO better name here
-waitForAuthenticate :: [LockT] -> X.Display -> IO ()
-waitForAuthenticate locks dpy = runLoop $ do
+newtype LoopBodyT a = LoopBody
+    { unLoopBody :: StateT (X.XEventPtr, String) IO a}
+  deriving(Functor, Applicative, Monad, MonadIO)
+
+keyboardEventHandler :: X.Display -> [LockT] -> LoopBodyT AuthorizedT
+keyboardEventHandler dpy locks = do
     xEventPointer <- getEvent
     event <- liftIO $ X.getEvent xEventPointer
     case event of
@@ -99,7 +107,10 @@ waitForAuthenticate locks dpy = runLoop $ do
                 then do
                     text <- getCharacters
                     resetCharacters
-                    liftIO $ checkPassword text
+                    a <- liftIO $ checkPassword text
+                    return $ case a of
+                        True -> Authorized
+                        False -> UnAuthorized
                 else do
                     unless ( X.ev_event_type event == X.keyRelease
                           || X.isFunctionKey ksym
@@ -108,20 +119,18 @@ waitForAuthenticate locks dpy = runLoop $ do
                           || X.isPFKey ksym
                           || X.isPrivateKeypadKey ksym) $
                         append str
-                    return False
+                    return Authorized
         _otherwise -> liftIO $ do
             forM_ locks $ \lock ->
                 X.raiseWindow dpy $ window lock
-            return False
+            return UnAuthorized
   where
-    runLoop loopBody = X.allocaXEvent $ \xevent -> evalStateT (whileM_ (not <$> loopBody) (return ())) (xevent, "")
     getEvent :: LoopBodyT X.XEventPtr
-    getEvent = fst <$> get >>= \xe -> liftIO $ X.nextEvent dpy xe >> return xe
+    getEvent = LoopBody $ fst <$> get >>= \xe -> liftIO $ X.nextEvent dpy xe >> return xe
     getCharacters :: LoopBodyT String
-    getCharacters = reverse.snd <$> get
+    getCharacters = LoopBody ( reverse.snd <$> get)
     append :: String -> LoopBodyT ()
-    append str = modify $ second (reverse str++)
-    resetCharacters = modify $ second (const "")
+    append str = LoopBody (modify $ second (reverse str++))
+    resetCharacters = LoopBody (modify $ second (const ""))
 
-type LoopBodyT a = StateT (X.XEventPtr, String) IO a
 

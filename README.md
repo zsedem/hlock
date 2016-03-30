@@ -2,8 +2,4 @@
 
 Simple X locker (reimplementation of slock from the suckless.org)
 
-## TODO
-
-* Create some layering so it can be testable
-* create an AUR PKGBUILD
-* create XMonad module for easy starting from XMonad
+It is basically creates a black window on all screen, which is only closed if you type your password correctly.

@@ -1,4 +1,6 @@
 module Graphics.X11.HLock(xLocker, hlock) where
+import Data.Maybe(fromMaybe)
+import Control.Arrow(second)
 import Data.Bits((.|.))
 import Control.Monad.State
 import Control.Concurrent(threadDelay)
@@ -107,9 +109,9 @@ keyboardEventHandler dpy locks = do
                     text <- getCharacters
                     resetCharacters
                     a <- liftIO $ checkPassword text
-                    return $ case a of
-                        True -> Authorized
-                        False -> UnAuthorized
+                    return $ if a
+                        then Authorized
+                        else UnAuthorized
                 else do
                     unless ( X.ev_event_type event == X.keyRelease
                           || X.isFunctionKey ksym
@@ -118,7 +120,7 @@ keyboardEventHandler dpy locks = do
                           || X.isPFKey ksym
                           || X.isPrivateKeypadKey ksym) $
                         append str
-                    return Authorized
+                    return UnAuthorized
         _otherwise -> liftIO $ do
             forM_ locks $ \lock ->
                 X.raiseWindow dpy $ window lock

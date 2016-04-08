@@ -22,7 +22,6 @@ library
   exposed-modules:     Graphics.X11.HLock
                      , HLock
                      , System.Posix.User.Password
-  other-modules:       Prelude
   build-depends:       base >=3 && <5
                      , X11
                      , basic-prelude
